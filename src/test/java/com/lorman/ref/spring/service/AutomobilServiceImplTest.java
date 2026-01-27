@@ -78,6 +78,7 @@ class AutomobilServiceImplTest {
 
     @Test
     void deleteById_completes() {
+        Mockito.when(repository.findById(1L)).thenReturn(Mono.just(automobil1));
         Mockito.when(repository.deleteById(1L)).thenReturn(Mono.empty());
 
         StepVerifier.create(service.deleteById(1L))

@@ -19,6 +19,6 @@ public class Automobil {
 
     private String model;
 
-    @Column("year_made")
+    @Column("YEAR_MADE")
     private Integer yearMade;
 }
