@@ -20,7 +20,7 @@ class ErrorHandlingIntegrationTest {
     @Test
     void getById_nonExisting_shouldReturn404WithErrorResponse() {
         client().get()
-                .uri("/api/autos/{id}", 999999)
+                .uri("/auta/{id}", 999999)
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
                 .expectStatus().isNotFound()
@@ -35,7 +35,7 @@ class ErrorHandlingIntegrationTest {
         AutomobilDTO invalid = new AutomobilDTO(null, "", "ModelX", 2020);
 
         client().post()
-                .uri("/api/autos")
+                .uri("/auta")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(invalid)
                 .exchange()
@@ -51,7 +51,7 @@ class ErrorHandlingIntegrationTest {
         AutomobilDTO invalid = new AutomobilDTO(null, "Brand", "Model", 1800); // < 1886
 
         client().put()
-                .uri("/api/autos/{id}", 1)
+                .uri("/auta/{id}", 1)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(invalid)
                 .exchange()
@@ -65,7 +65,7 @@ class ErrorHandlingIntegrationTest {
     @Test
     void delete_nonExisting_shouldReturn404() {
         client().delete()
-                .uri("/api/autos/{id}", 888888)
+                .uri("/auta/{id}", 888888)
                 .exchange()
                 .expectStatus().isNotFound()
                 .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
@@ -77,7 +77,7 @@ class ErrorHandlingIntegrationTest {
     @Test
     void getById_withTypeMismatch_shouldReturn400() {
         client().get()
-                .uri("/api/autos/{id}", "abc")
+                .uri("/auta/{id}", "abc")
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
                 .expectStatus().isBadRequest()

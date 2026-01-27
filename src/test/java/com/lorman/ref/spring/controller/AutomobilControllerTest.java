@@ -17,7 +17,7 @@ class AutomobilControllerTest {
         WebTestClient client = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).build();
 
         client.get()
-                .uri("/api/autos")
+                .uri("/auta")
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
                 .expectStatus().isOk()
@@ -31,7 +31,7 @@ class AutomobilControllerTest {
         WebTestClient client = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).build();
 
         client.get()
-                .uri("/api/autos/{id}", 1)
+                .uri("/auta/{id}", 1)
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
                 .expectStatus().isOk()

@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spring-latest-ref-config
+  labels:
+    app: spring-latest-ref
+data:
+  application.properties: |
+    management.metrics.export.otlp.enabled=false
