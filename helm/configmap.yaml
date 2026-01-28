@@ -7,3 +7,28 @@ metadata:
 data:
   application.properties: |
     management.metrics.export.otlp.enabled=false
+    # Zapne JSON logovanie v prostredí Kubernetes (nadstaví Logback konfiguráciu)
+    logging.config=/etc/spring-latest-ref-config/logback-json.xml
+  logback-json.xml: |
+    <?xml version="1.0" encoding="UTF-8"?>
+    <configuration>
+        <!-- JSON konzolový appender cez Logstash encoder -->
+        <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+                <!-- Premenujeme niektoré polia na jednoduchšie názvy -->
+                <fieldNames>
+                    <timestamp>timestamp</timestamp>
+                    <level>level</level>
+                    <thread>thread</thread>
+                    <logger>logger</logger>
+                    <formattedMessage>message</formattedMessage>
+                </fieldNames>
+                <!-- Zahrni MDC (napr. traceId, spanId z Micrometer tracing) -->
+                <includeMdc>true</includeMdc>
+            </encoder>
+        </appender>
+        
+        <root level="INFO">
+            <appender-ref ref="JSON_CONSOLE"/>
+        </root>
+    </configuration>

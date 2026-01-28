@@ -11,12 +11,14 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AutomobilDTO {
+    private Long id;
+
     @NotBlank(groups = {OnCreate.class, OnUpdate.class})
     private String brand;
+
     @NotBlank(groups = {OnCreate.class, OnUpdate.class})
     private String model;
 
-    private Long id;
     @NotNull(groups = {OnCreate.class})
     @Min(value = 1886, groups = {OnCreate.class, OnUpdate.class})
     private Integer yearMade;
