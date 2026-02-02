@@ -4,10 +4,8 @@ import com.lorman.ref.spring.dto.DummyResponseDTO;
 import com.lorman.ref.spring.properties.DummyProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 
 @Component
@@ -34,14 +32,6 @@ public class DummyClient {
                 .get()
                 .uri(baseUrl + "/dummy")
                 .retrieve()
-                .onStatus(status -> status.value() == 500,
-                        resp -> resp.bodyToMono(String.class)
-                                .defaultIfEmpty("Upstream returned 500")
-                                .flatMap(msg -> {
-                                    log.warn("DummyClient: upstream 500 detected, translating to 503. Body={}", msg);
-                                    return Mono.error(new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Translated from 500: " + msg));
-                                })
-                )
                 .bodyToMono(DummyResponseDTO.class)
                 .doOnNext(dto -> {
                     if (dto != null) {
@@ -75,14 +65,6 @@ public class DummyClient {
                 .get()
                 .uri(baseUrl + "/dummy?force=" + number)
                 .retrieve()
-                .onStatus(status -> status.value() == 500,
-                        resp -> resp.bodyToMono(String.class)
-                                .defaultIfEmpty("Upstream returned 500")
-                                .flatMap(msg -> {
-                                    log.warn("DummyClient: upstream 500 detected (forced={}), translating to 503. Body={}", number, msg);
-                                    return Mono.error(new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Translated from 500: " + msg));
-                                })
-                )
                 .bodyToMono(DummyResponseDTO.class)
                 .then();
     }
