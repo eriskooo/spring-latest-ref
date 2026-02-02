@@ -9,6 +9,11 @@ data:
     management.metrics.export.otlp.enabled=false
     # Zapne JSON logovanie v prostredí Kubernetes (nadstaví Logback konfiguráciu)
     logging.config=/etc/spring-latest-ref-config/logback-json.xml
+    # Enable dedicated Kubernetes probe endpoints
+    management.endpoint.health.probes.enabled=true
+    management.endpoints.web.exposure.include=health,info
+    # Make readiness independent from Kafka by default (can be re-enabled later)
+    management.health.kafka.enabled=false
   logback-json.xml: |
     <?xml version="1.0" encoding="UTF-8"?>
     <configuration>
