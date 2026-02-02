@@ -1,5 +1,6 @@
 package com.lorman.ref.spring.service;
 
+import com.lorman.ref.spring.client.DummyClient;
 import com.lorman.ref.spring.domain.Automobil;
 import com.lorman.ref.spring.dto.AutomobilDTO;
 import com.lorman.ref.spring.mapper.AutomobilMapper;
@@ -20,6 +21,8 @@ class AutomobilServiceImplTest {
 
     @Mock
     private AutoRepository repository;
+    @Mock
+    private DummyClient dummyClient;
 
     private AutoServiceImpl service;
 
@@ -29,13 +32,14 @@ class AutomobilServiceImplTest {
     @BeforeEach
     void setUp() {
         AutomobilMapper mapper = Mappers.getMapper(AutomobilMapper.class);
-        service = new AutoServiceImpl(repository, mapper);
+        service = new AutoServiceImpl(repository, mapper, dummyClient);
         automobil1 = new Automobil(1L, "Toyota", "Corolla", 2018);
         automobil2 = new Automobil(2L, "VW", "Golf", 2020);
     }
 
     @Test
     void findAll_returnsAll() {
+        Mockito.when(dummyClient.callDummy()).thenReturn(Mono.empty());
         Mockito.when(repository.findAll()).thenReturn(Flux.just(automobil1, automobil2));
 
         StepVerifier.create(service.findAll())

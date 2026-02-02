@@ -1,5 +1,6 @@
 package com.lorman.ref.spring.service;
 
+import com.lorman.ref.spring.client.DummyClient;
 import com.lorman.ref.spring.domain.Automobil;
 import com.lorman.ref.spring.dto.AutomobilDTO;
 import com.lorman.ref.spring.exception.NotFoundException;
@@ -16,10 +17,15 @@ public class AutoServiceImpl implements AutoService {
 
     private final AutoRepository repository;
     private final AutomobilMapper mapper;
+    private final DummyClient dummyClient;
 
     @Override
     public Flux<AutomobilDTO> findAll() {
-        return repository.findAll().map(mapper::toDto);
+        // Pred načítaním všetkých áut zavoláme interný /dummy endpoint.
+        // Výsledok ani chyby nás nezastavia – po zavolaní pokračujeme ďalej.
+        return dummyClient.callDummy()
+                .onErrorResume(e -> Mono.empty())
+                .thenMany(repository.findAll().map(mapper::toDto));
     }
 
     private static void validate(AutomobilDTO dto) {
