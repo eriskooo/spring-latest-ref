@@ -1,67 +1,83 @@
-Spring Latest Reference (WebFlux + R2DBC) – Demo aplikácia
+Spring Latest Reference (WebFlux + R2DBC) – Demo app
 
-Toto je ukážková reaktívna CRUD aplikácia postavená na Spring Boot 3.3.6 (WebFlux) so
-Spring Data R2DBC (H2 in‑memory). Schému a dáta riadi Flyway. Mapovanie zabezpečuje MapStruct a
-boilerplate redukuje Lombok.
+This is a reactive CRUD demo built on Spring Boot 3.3.6 (WebFlux) with Spring Data R2DBC (H2 in‑memory).
+Flyway manages schema and seed data. MapStruct handles mapping; Lombok reduces boilerplate.
 
-Anglická verzia: README.en.md
-
-Technológie
+Technologies
 
 - Spring Boot 3.3.6 (Spring 6, WebFlux)
 - Spring Data R2DBC (H2)
-- Flyway (DB migrácie)
+- Flyway (DB migrations)
 - MapStruct (Entity ↔ DTO)
 - Lombok
 - Actuator (health, info)
 
-API a doména
+API and domain
 
-- Entita Automobil (tabuľka AUTOMOBIL): id, brand, model, yearMade
-- REST:
+- Entity: Automobil (table AUTOMOBIL) — id, brand, model, yearMade
+- REST endpoints:
     - /auta: GET (list), GET /{id}, POST, PUT /{id}, DELETE /{id}
-    - /dummy: GET – vráti DummyResponseDTO; ak číslo = 5, vyvolá 500 (spracuje GlobalExceptionHandler)
+    - /dummy: GET — returns DummyResponseDTO; when number=5 it throws 500 handled by GlobalExceptionHandler
 
-Chybové spracovanie a logovanie
+Error handling and logging
 
-- GlobalExceptionHandler mapuje bežné chyby na JSON ErrorResponseDTO.
-- Outbound WebClient filter globálne prekladá 500 → 503 (Service Unavailable) a zachová správu.
-- TraceLogFilter (server-side WebFilter) loguje:
-    - „>“ požiadavku (metóda, cesta, hlavičky) a textové body do 2048 znakov,
-    - „<“ odpoveď (status, hlavičky) a textové body do 2048 znakov,
-    - maskuje citlivé hlavičky (napr. Authorization).
+- GlobalExceptionHandler maps common errors to JSON ErrorResponseDTO.
+- Global WebClient filter translates upstream 500 → 503 (Service Unavailable) and preserves the original message.
+- TraceLogFilter (server‑side WebFilter) logs:
+    - ">" request (method, path, headers) and textual bodies up to 2048 chars,
+    - "<" response (status, headers) and textual bodies up to 2048 chars,
+    - masks sensitive headers (e.g., Authorization).
 
-Lokálne spustenie
+Kafka (brief)
 
-1) Java 21, Maven
+- Feature flag: kafka.enabled=false by default (no broker required for local dev and tests).
+- When enabled, the app provides:
+    - KafkaStartupProducer: sends one message to topic "my.first.topic" at application startup.
+    - KafkaMessageConsumer: listens on "my.first.topic" (group: spring-latest-ref-group) and logs payloads.
+- How to enable locally:
+    - Start a Kafka/Redpanda broker and set in application.properties:
+        - kafka.enabled=true
+        - spring.kafka.bootstrap-servers=localhost:9092
+- Kubernetes: manifests in helm/ provide an in‑cluster Redpanda (helm/kafka.yaml) and configure the app via env vars:
+    - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    - KAFKA_ENABLED=true
+- Health checks: Kubernetes probes use dedicated Actuator endpoints (/actuator/health/liveness,
+  /actuator/health/readiness).
+  Kafka health contributor is disabled by default in helm/configmap.yaml to keep readiness independent from Kafka;
+  enable with management.health.kafka.enabled=true if desired.
+
+Run locally
+
+1) Java 21 and Maven
 2) mvn spring-boot:run
-   alebo spustite com.lorman.ref.spring.SpringLatestRefApplication
+   or run com.lorman.ref.spring.SpringLatestRefApplication
 
-Konfigurácia (application.properties)
+Configuration (application.properties)
 
-- H2 R2DBC URL a Flyway nastavenia
+- H2 R2DBC URL and Flyway settings
 - Server port (default 8080)
 - Actuator: /actuator/health
+- Optional Kafka settings (see Kafka section)
 
-Testy
+Tests
 
-- Integračné: kontroléry, WebClient správanie (preklad 500→503)
-- Jednotkové: servisná vrstva
+- Integration: controllers and WebClient behavior (500→503 translation)
+- Unit: service layer
 
 Docker
 
 - build: docker build -t lorma/spring-latest-ref:snapshot .
 - run:   docker run --rm -p 8080:8080 lorma/spring-latest-ref:snapshot
-- overenie: http://localhost:8080/auta, /actuator/health
+- verify: http://localhost:8080/auta, /actuator/health
 
-Kubernetes (adresár helm/)
+Kubernetes (helm/ directory)
 
 - kubectl apply -f helm/configmap.yaml
 - kubectl apply -f helm/deployment.yaml
 - kubectl apply -f helm/service.yaml
-- (voliteľné) kubectl apply -f helm/ingress.yaml
+- (optional) kubectl apply -f helm/ingress.yaml
 
-Poznámky
+Notes
 
-- Po štarte sú vložené 3 záznamy (V2__seed_auto.sql).
-- Service je ClusterIP; health-checky cez /actuator/health.
+- Three sample rows are inserted on startup (V2__seed_auto.sql).
+- Service type is ClusterIP; probes use dedicated Actuator endpoints.
