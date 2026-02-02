@@ -1,11 +1,9 @@
 package com.lorman.ref.spring.web;
 
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.web.reactive.function.client.WebClientCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.reactive.function.client.ClientRequest;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -13,42 +11,12 @@ import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 
 /**
- * Application-level logging for all WebClient-based HTTP clients.
- * This customizer attaches request/response logging filters to every WebClient.Builder
- * created via Spring Boot autoconfiguration, providing a single, unified logger
- * for outbound HTTP traffic across the application.
+ * Application-level behavior for all WebClient-based HTTP clients.
+ * This customizer attaches a single filter that translates upstream 500 errors
+ * to 503 (Service Unavailable) while preserving the original error message.
  */
 @Configuration
-@Slf4j
-public class OutboundHttpClientLoggingConfig {
-
-    private static ExchangeFilterFunction logRequest() {
-        return ExchangeFilterFunction.ofRequestProcessor((ClientRequest request) -> {
-            try {
-                log.info("HTTP-OUT Request: {} {}", request.method(), request.url());
-                if (!request.headers().isEmpty()) {
-                    log.debug("HTTP-OUT Request headers: {}", request.headers());
-                }
-            } catch (Exception ignored) {
-                // best-effort logging
-            }
-            return Mono.just(request);
-        });
-    }
-
-    private static ExchangeFilterFunction logResponse() {
-        return ExchangeFilterFunction.ofResponseProcessor((ClientResponse response) -> {
-            try {
-                log.info("HTTP-OUT Response: status={}", response.statusCode());
-                if (!response.headers().asHttpHeaders().isEmpty()) {
-                    log.debug("HTTP-OUT Response headers: {}", response.headers().asHttpHeaders());
-                }
-            } catch (Exception ignored) {
-                // best-effort logging
-            }
-            return Mono.just(response);
-        });
-    }
+public class OutboundHttpClientCustomizer {
 
     /**
      * Globálny prekladač chýb: ak upstream vráti 500, preložíme na 503 (Service Unavailable)
@@ -74,9 +42,7 @@ public class OutboundHttpClientLoggingConfig {
         return new WebClientCustomizer() {
             @Override
             public void customize(WebClient.Builder builder) {
-                builder.filter(logRequest())
-                        .filter(logResponse())
-                        .filter(translate500To503());
+                builder.filter(translate500To503());
             }
         };
     }

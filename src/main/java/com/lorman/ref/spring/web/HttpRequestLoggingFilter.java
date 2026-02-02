@@ -1,8 +1,6 @@
 package com.lorman.ref.spring.web;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.Ordered;
-import org.springframework.core.annotation.Order;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferFactory;
 import org.springframework.core.io.buffer.DataBufferUtils;
@@ -10,7 +8,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpRequestDecorator;
-import org.springframework.stereotype.Component;
 import org.springframework.util.MimeType;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ServerWebExchange;
@@ -31,9 +28,10 @@ import java.util.stream.Collectors;
  * Reactive HTTP request logging filter for WebFlux.
  * Logs method, path, headers and body (for textual payloads).
  */
+@Deprecated
 @Slf4j
-@Component
-@Order(Ordered.HIGHEST_PRECEDENCE + 10)
+//@Component
+//@Order(Ordered.HIGHEST_PRECEDENCE + 10)
 public class HttpRequestLoggingFilter implements WebFilter {
 
     private static final int MAX_LOGGED_BODY_CHARS = 2048; // cap to avoid huge logs
