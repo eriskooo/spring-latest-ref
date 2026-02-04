@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 public class KafkaMessageConsumer {
 
     @KafkaListener(topics = "my.first.topic", groupId = "spring-latest-ref-group")
-    public void onMessage(String payload) {
+    public void onMessage(KafkaMessageDTO payload) {
         log.info("[KAFKA] Consumed from 'my.first.topic': {}", payload);
     }
 }

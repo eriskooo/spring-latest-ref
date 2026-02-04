@@ -29,7 +29,7 @@ import static org.mockito.Mockito.verify;
 class KafkaEmbeddedIntegrationTest {
 
     @Autowired
-    private KafkaTemplate<String, String> kafkaTemplate;
+    private KafkaTemplate<String, KafkaMessageDTO> kafkaTemplate;
 
     @SpyBean
     private KafkaMessageConsumer consumer;
@@ -38,10 +38,10 @@ class KafkaEmbeddedIntegrationTest {
     void produceAndConsume_withEmbeddedKafka_worksWithJsonDto() {
         String randomValue = "test-" + UUID.randomUUID();
 
-        String dto = new String(randomValue);
+        KafkaMessageDTO dto = new KafkaMessageDTO(randomValue);
         kafkaTemplate.send("my.first.topic", dto);
 
-        ArgumentMatcher<String> matchesValue = m -> randomValue.equals(m);
+        ArgumentMatcher<KafkaMessageDTO> matchesValue = m -> m != null && randomValue.equals(m.getValue());
         verify(consumer, timeout(10_000)).onMessage(argThat(matchesValue));
     }
 }

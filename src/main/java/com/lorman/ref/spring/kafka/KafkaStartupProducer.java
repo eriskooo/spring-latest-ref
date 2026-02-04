@@ -19,11 +19,11 @@ public class KafkaStartupProducer {
 
     private static final String TOPIC = "my.first.topic";
 
-    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final KafkaTemplate<String, KafkaMessageDTO> kafkaTemplate;
 
     @EventListener(ApplicationReadyEvent.class)
     public void onReady() {
-        String payload = "Hello from SpringLatestRef at startup";
+        KafkaMessageDTO payload = new KafkaMessageDTO("Hello from SpringLatestRef at startup");
         log.info("[KAFKA] Sending startup message to topic '{}'", TOPIC);
         kafkaTemplate.send(TOPIC, payload)
                 .whenComplete((result, ex) -> {
