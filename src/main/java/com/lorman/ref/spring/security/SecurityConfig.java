@@ -3,7 +3,6 @@ package com.lorman.ref.spring.security;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
@@ -34,10 +33,6 @@ public class SecurityConfig {
                 .securityContextRepository(NoOpServerSecurityContextRepository.INSTANCE)
                 .authorizeExchange(registry -> registry
                         .pathMatchers("/actuator/health", "/actuator/health/**", "/dummy").permitAll()
-                        .pathMatchers(HttpMethod.GET, "/auta/**").hasRole("READ")
-                        .pathMatchers(HttpMethod.POST, "/auta").hasRole("WRITE")
-                        .pathMatchers(HttpMethod.PUT, "/auta/**").hasRole("UPDATE")
-                        .pathMatchers(HttpMethod.DELETE, "/auta/**").hasRole("WRITE")
                         .anyExchange().authenticated()
                 )
                 .oauth2ResourceServer(oauth -> oauth
