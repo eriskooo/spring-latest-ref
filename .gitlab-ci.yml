@@ -1,0 +1,48 @@
+# Simple GitLab CI pipeline: Maven build + Dockerize
+
+stages:
+  - build
+  - docker
+
+variables:
+  # Speed up Maven and keep cache between jobs
+  MAVEN_CLI_OPTS: "-B -e -V"
+  MAVEN_OPTS: "-Dmaven.test.failure.ignore=false"
+
+cache:
+  key: "m2-cache-${CI_PROJECT_PATH}"
+  paths:
+    - .m2/repository
+
+build:maven:
+  stage: build
+  image: maven:3.9-eclipse-temurin-21
+  script:
+    - mvn $MAVEN_CLI_OPTS clean install
+  artifacts:
+    when: always
+    paths:
+      - target/*.jar
+
+docker:image:
+  stage: docker
+  image: docker:27
+  services:
+    - name: docker:27-dind
+      command: [ "--tls=false" ]
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" "$CI_REGISTRY" --password-stdin
+    - |
+      IMAGE_NAME="$CI_REGISTRY_IMAGE"
+      IMAGE_TAG="$CI_COMMIT_SHORT_SHA"
+      docker build -t "$IMAGE_NAME:$IMAGE_TAG" -t "$IMAGE_NAME:latest" .
+    - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
+    - |
+      if [ "$CI_COMMIT_BRANCH" = "$CI_DEFAULT_BRANCH" ]; then
+        docker push "$CI_REGISTRY_IMAGE:latest"
+      fi
+  rules:
+    - if: $CI_COMMIT_BRANCH
