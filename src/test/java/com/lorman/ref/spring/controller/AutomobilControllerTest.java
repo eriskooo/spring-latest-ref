@@ -1,5 +1,6 @@
 package com.lorman.ref.spring.controller;
 
+import com.lorman.ref.spring.security.TestJwtUtil;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -14,7 +15,11 @@ class AutomobilControllerTest {
 
     @Test
     void all_shouldReturnOkAndSomeItems() {
-        WebTestClient client = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).build();
+        String token = TestJwtUtil.createToken(java.util.List.of("READ"));
+        WebTestClient client = WebTestClient.bindToServer()
+                .baseUrl("http://localhost:" + port)
+                .defaultHeader("Authorization", "Bearer " + token)
+                .build();
 
         client.get()
                 .uri("/auta")
@@ -28,7 +33,11 @@ class AutomobilControllerTest {
 
     @Test
     void byId_shouldReturnSingleEntity() {
-        WebTestClient client = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).build();
+        String token = TestJwtUtil.createToken(java.util.List.of("READ"));
+        WebTestClient client = WebTestClient.bindToServer()
+                .baseUrl("http://localhost:" + port)
+                .defaultHeader("Authorization", "Bearer " + token)
+                .build();
 
         client.get()
                 .uri("/auta/{id}", 1)
