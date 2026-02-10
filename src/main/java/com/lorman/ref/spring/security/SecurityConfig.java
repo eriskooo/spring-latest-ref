@@ -3,6 +3,7 @@ package com.lorman.ref.spring.security;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
@@ -21,6 +22,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+@Profile("!insecure") // všetko okrem insecure
 @Configuration
 @EnableReactiveMethodSecurity
 public class SecurityConfig {
@@ -32,7 +34,18 @@ public class SecurityConfig {
                 .cors(ServerHttpSecurity.CorsSpec::disable)
                 .securityContextRepository(NoOpServerSecurityContextRepository.INSTANCE)
                 .authorizeExchange(registry -> registry
-                        .pathMatchers("/actuator/health", "/actuator/health/**", "/dummy").permitAll()
+                        .pathMatchers(
+                                "/actuator/health", "/actuator/health/**",
+                                "/dummy",
+
+                                // OpenAPI
+                                "/v3/api-docs", "/v3/api-docs.yaml", "/v3/api-docs/**",
+
+                                // Swagger UI
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/webjars/**"
+                        ).permitAll()
                         .anyExchange().authenticated()
                 )
                 .oauth2ResourceServer(oauth -> oauth

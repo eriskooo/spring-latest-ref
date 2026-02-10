@@ -52,6 +52,24 @@ Run locally
 2) mvn spring-boot:run
    or run com.lorman.ref.spring.SpringLatestRefApplication
 
+API docs (OpenAPI / Swagger UI)
+
+- Swagger UI (available by default):
+    - http://localhost:8080/swagger-ui.html
+    - http://localhost:8080/swagger-ui/index.html (the UI is served here; /swagger-ui.html redirects)
+- OpenAPI JSON: http://localhost:8080/v3/api-docs
+- OpenAPI YAML: http://localhost:8080/v3/api-docs.yaml
+
+Notes and troubleshooting
+
+- Security: these endpoints are publicly accessible (no token needed). See SecurityConfig permitAll for
+  /v3/api-docs, /v3/api-docs.yaml, /v3/api-docs/**, /swagger-ui.html, /swagger-ui/**.
+- If you get 404:
+    - Ensure the app is running on port 8080 (or adjust the URL if you changed server.port).
+    - Check that the springdoc starter is present (pom.xml contains springdoc-openapi-starter-webflux-ui).
+    - If you use a custom context path (server.servlet.context-path or spring.webflux.base-path), prefix the URLs, e.g.,
+      http://localhost:8080/myapp/swagger-ui.html.
+
 Configuration (application.properties)
 
 - H2 R2DBC URL and Flyway settings
@@ -139,13 +157,10 @@ checklist you can pick from. Items are grouped and include suggested starters/li
 
 Getting started with a few high‑impact additions
 
-- OpenAPI UI: add dependency
-    - <dependency>
-        <groupId>org.springdoc</groupId>
-        <artifactId>springdoc-openapi-starter-webflux-ui</artifactId>
-        <version>2.6.0</version>
-      </dependency>
-    - Then visit /swagger-ui.html and /v3/api-docs.
+- OpenAPI UI: already included
+    - The project already includes the dependency:
+      org.springdoc:springdoc-openapi-starter-webflux-ui:2.6.0
+    - Visit /swagger-ui.html and /v3/api-docs (see links above).
 
 - Resilience4j: add
     - <dependency>
