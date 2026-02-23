@@ -12,6 +12,9 @@ import org.mapstruct.factory.Mappers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.TransactionCallback;
+import org.springframework.transaction.support.TransactionTemplate;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -25,6 +28,8 @@ class AutomobilServiceImplTest {
     private AutoRepository repository;
     @Mock
     private DummyClient dummyClient;
+    @Mock
+    private TransactionTemplate transactionTemplate;
 
     private AutoServiceImpl service;
 
@@ -34,7 +39,7 @@ class AutomobilServiceImplTest {
     @BeforeEach
     void setUp() {
         AutomobilMapper mapper = Mappers.getMapper(AutomobilMapper.class);
-        service = new AutoServiceImpl(repository, mapper, dummyClient);
+        service = new AutoServiceImpl(repository, mapper, dummyClient, transactionTemplate);
         automobil1 = new Automobil(1L, "Toyota", "Corolla", 2018);
         automobil2 = new Automobil(2L, "VW", "Golf", 2020);
     }
@@ -43,14 +48,17 @@ class AutomobilServiceImplTest {
     void findAll_returnsAll() {
         Mockito.when(dummyClient.callDummy()).thenReturn(Mono.empty());
         Mockito.when(repository.findAll()).thenReturn(List.of(automobil1, automobil2));
+        Mockito.when(transactionTemplate.execute(Mockito.any()))
+                .thenAnswer(invocation -> {
+                    @SuppressWarnings("unchecked")
+                    TransactionCallback<List<AutomobilDTO>> cb = (TransactionCallback<List<AutomobilDTO>>) invocation.getArgument(0);
+                    return cb.doInTransaction(Mockito.mock(TransactionStatus.class));
+                });
 
-        var result = service.findAll();
-        org.assertj.core.api.Assertions.assertThat(result)
-                .extracting(AutomobilDTO::getId, AutomobilDTO::getBrand)
-                .containsExactly(
-                        org.assertj.core.groups.Tuple.tuple(1L, "Toyota"),
-                        org.assertj.core.groups.Tuple.tuple(2L, "VW")
-                );
+        StepVerifier.create(service.findAll())
+                .expectNextMatches(a -> a.getId().equals(1L) && a.getBrand().equals("Toyota"))
+                .expectNextMatches(a -> a.getId().equals(2L) && a.getBrand().equals("VW"))
+                .verifyComplete();
     }
 
     @Test

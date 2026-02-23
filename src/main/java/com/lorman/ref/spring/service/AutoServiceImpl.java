@@ -8,9 +8,12 @@ import com.lorman.ref.spring.mapper.AutomobilMapper;
 import com.lorman.ref.spring.repository.AutoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -20,18 +23,23 @@ public class AutoServiceImpl implements AutoService {
     private final AutomobilMapper mapper;
     private final DummyClient dummyClient;
 
-    @Override
-    @Transactional(readOnly = true)
-    public java.util.List<AutomobilDTO> findAll() {
-        // Fire-and-forget call to dummy endpoint; do not block request thread
-        try {
-            dummyClient.callDummy().onErrorResume(e -> Mono.empty()).subscribe();
-        } catch (Throwable ignored) {
-        }
 
-        return repository.findAll().stream()
-                .map(mapper::toDto)
-                .toList();
+    private final TransactionTemplate txTemplate;
+
+    @Override
+    public Flux<AutomobilDTO> findAll() {
+        Mono<List<AutomobilDTO>> data = dummyClient.callDummy()
+                .then(
+                        Mono.fromCallable(() ->
+                                txTemplate.execute(status ->
+                                        repository.findAll().stream()
+                                                .map(mapper::toDto)
+                                                .toList()
+                                )
+                        ).subscribeOn(Schedulers.boundedElastic())
+                );
+
+        return data.flatMapMany(Flux::fromIterable);
     }
 
     private static void validate(AutomobilDTO dto) {
