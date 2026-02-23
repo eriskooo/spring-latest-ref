@@ -4,6 +4,7 @@ import com.lorman.ref.spring.domain.Address;
 import com.lorman.ref.spring.domain.Automobil;
 import com.lorman.ref.spring.domain.Driver;
 import jakarta.persistence.EntityManagerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +16,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Slf4j
 @SpringBootTest
 @Transactional
 @TestPropertySource(properties = {
@@ -85,5 +87,32 @@ class AutoRepositoryTest {
 
         // Sanity: ensure some addresses exist in the seeded graph
         assertThat(addressCount).isGreaterThan(0);
+    }
+
+    @Test
+    void findAll_shouldLoadFullGraph_andLogQueryCount() {
+        // Enable and read Hibernate statistics
+        Statistics stats = emf.unwrap(org.hibernate.SessionFactory.class).getStatistics();
+        long before = stats.getPrepareStatementCount();
+
+        List<Automobil> all = repository.findAll();
+
+        long after = stats.getPrepareStatementCount();
+        long delta = after - before;
+
+        log.info("*** delta (1) : {}", delta);
+
+        assertThat(all.size()).isEqualTo(3);
+
+        Automobil automobil = all.iterator().next();
+        assertThat(automobil.getDrivers()).isNotEmpty();
+
+        Driver driver = automobil.getDrivers().iterator().next();
+        assertThat(driver.getAddresses()).isNotEmpty();
+
+        after = stats.getPrepareStatementCount();
+        delta = after - before;
+
+        log.info("*** delta (2) : {}", delta);
     }
 }

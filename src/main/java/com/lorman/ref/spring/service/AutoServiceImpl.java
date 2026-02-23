@@ -8,7 +8,7 @@ import com.lorman.ref.spring.mapper.AutomobilMapper;
 import com.lorman.ref.spring.repository.AutoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Flux;
+import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -21,14 +21,17 @@ public class AutoServiceImpl implements AutoService {
     private final DummyClient dummyClient;
 
     @Override
-    public Flux<AutomobilDTO> findAll() {
-        // Pred načítaním všetkých áut zavoláme interný /dummy endpoint.
-        // Výsledok ani chyby nás nezastavia – po zavolaní pokračujeme ďalej.
-        return dummyClient.callDummy()
-                .onErrorResume(e -> Mono.empty())
-                .thenMany(Flux.defer(() -> Flux.fromIterable(repository.findAll())
-                        .map(a -> mapper.toDto(a))))
-                .subscribeOn(Schedulers.boundedElastic());
+    @Transactional(readOnly = true)
+    public java.util.List<AutomobilDTO> findAll() {
+        // Fire-and-forget call to dummy endpoint; do not block request thread
+        try {
+            dummyClient.callDummy().onErrorResume(e -> Mono.empty()).subscribe();
+        } catch (Throwable ignored) {
+        }
+
+        return repository.findAll().stream()
+                .map(mapper::toDto)
+                .toList();
     }
 
     private static void validate(AutomobilDTO dto) {

@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.BatchSize;
 
 import java.util.List;
 
@@ -51,6 +52,7 @@ public class Automobil {
             cascade = CascadeType.ALL,
             orphanRemoval = false
     )
+    @BatchSize(size = 50)
     private List<Driver> drivers;
 
     // Convenience constructor kept for backward compatibility in tests

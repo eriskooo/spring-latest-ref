@@ -1,11 +1,12 @@
 package com.lorman.ref.spring.service;
 
 import com.lorman.ref.spring.dto.AutomobilDTO;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+
 public interface AutoService {
-    Flux<AutomobilDTO> findAll();
+    List<AutomobilDTO> findAll();
 
     Mono<AutomobilDTO> findById(Long id);
 

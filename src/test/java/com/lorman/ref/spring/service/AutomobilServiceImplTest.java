@@ -44,10 +44,13 @@ class AutomobilServiceImplTest {
         Mockito.when(dummyClient.callDummy()).thenReturn(Mono.empty());
         Mockito.when(repository.findAll()).thenReturn(List.of(automobil1, automobil2));
 
-        StepVerifier.create(service.findAll())
-                .expectNextMatches(a -> a.getId().equals(1L) && a.getBrand().equals("Toyota"))
-                .expectNextMatches(a -> a.getId().equals(2L) && a.getBrand().equals("VW"))
-                .verifyComplete();
+        var result = service.findAll();
+        org.assertj.core.api.Assertions.assertThat(result)
+                .extracting(AutomobilDTO::getId, AutomobilDTO::getBrand)
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple(1L, "Toyota"),
+                        org.assertj.core.groups.Tuple.tuple(2L, "VW")
+                );
     }
 
     @Test

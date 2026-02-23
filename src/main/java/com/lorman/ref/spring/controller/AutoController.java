@@ -6,8 +6,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/auta")
@@ -18,7 +19,7 @@ public class AutoController {
     private final AutoService service;
 
     @GetMapping
-    public Flux<AutomobilDTO> all() {
+    public List<AutomobilDTO> all() {
         return service.findAll();
     }
 

@@ -20,5 +20,4 @@ public interface AutoRepository extends JpaRepository<Automobil, Long> {
 //    @EntityGraph(value = "Automobil.withDriversAndAddresses")
 //    @Query("select distinct a from Automobil a left join fetch a.drivers d left join fetch d.addresses")
     List<Automobil> findAll();
-
 }
