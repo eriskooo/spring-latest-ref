@@ -33,8 +33,13 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-r2dbc</artifactId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
+        <!--        &lt;!&ndash; Explicit Jakarta Persistence API for annotations &ndash;&gt;-->
+        <!--        <dependency>-->
+        <!--            <groupId>jakarta.persistence</groupId>-->
+        <!--            <artifactId>jakarta.persistence-api</artifactId>-->
+        <!--        </dependency>-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
@@ -51,10 +56,6 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-jdbc</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.springframework.kafka</groupId>
-            <artifactId>spring-kafka</artifactId>
-        </dependency>
 
         <!-- JSON logging (Logback Logstash encoder) -->
         <dependency>
@@ -69,12 +70,6 @@
             <artifactId>h2</artifactId>
             <scope>runtime</scope>
         </dependency>
-        <dependency>
-            <groupId>io.r2dbc</groupId>
-            <artifactId>r2dbc-h2</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-
 
         <!-- Observability / tracing (náhrada za spring-boot-starter-opentelemetry z Boot 4) -->
         <dependency>

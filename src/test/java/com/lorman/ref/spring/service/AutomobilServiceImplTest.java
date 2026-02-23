@@ -12,9 +12,11 @@ import org.mapstruct.factory.Mappers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
+
+import java.util.List;
+import java.util.Optional;
 
 @ExtendWith(MockitoExtension.class)
 class AutomobilServiceImplTest {
@@ -40,7 +42,7 @@ class AutomobilServiceImplTest {
     @Test
     void findAll_returnsAll() {
         Mockito.when(dummyClient.callDummy()).thenReturn(Mono.empty());
-        Mockito.when(repository.findAll()).thenReturn(Flux.just(automobil1, automobil2));
+        Mockito.when(repository.findAll()).thenReturn(List.of(automobil1, automobil2));
 
         StepVerifier.create(service.findAll())
                 .expectNextMatches(a -> a.getId().equals(1L) && a.getBrand().equals("Toyota"))
@@ -50,7 +52,7 @@ class AutomobilServiceImplTest {
 
     @Test
     void findById_returnsMono() {
-        Mockito.when(repository.findById(1L)).thenReturn(Mono.just(automobil1));
+        Mockito.when(repository.findById(1L)).thenReturn(Optional.of(automobil1));
 
         StepVerifier.create(service.findById(1L))
                 .expectNextMatches(a -> a.getId().equals(1L) && a.getModel().equals("Corolla"))
@@ -61,7 +63,7 @@ class AutomobilServiceImplTest {
     void create_setsIdNullAndSaves() {
         AutomobilDTO incoming = new AutomobilDTO(999L, "Skoda", "Octavia", 2019);
         Automobil saved = new Automobil(10L, "Skoda", "Octavia", 2019);
-        Mockito.when(repository.save(Mockito.argThat(a -> a.getId() == null))).thenReturn(Mono.just(saved));
+        Mockito.when(repository.save(Mockito.argThat(a -> a.getId() == null))).thenReturn(saved);
 
         StepVerifier.create(service.create(incoming))
                 .expectNextMatches(a -> a.getId().equals(10L) && a.getBrand().equals("Skoda"))
@@ -72,8 +74,8 @@ class AutomobilServiceImplTest {
     void update_mergesAndSaves() {
         AutomobilDTO update = new AutomobilDTO(null, "Toyota", "Corolla", 2021);
         Automobil merged = new Automobil(1L, "Toyota", "Corolla", 2021);
-        Mockito.when(repository.findById(1L)).thenReturn(Mono.just(automobil1));
-        Mockito.when(repository.save(Mockito.any())).thenReturn(Mono.just(merged));
+        Mockito.when(repository.findById(1L)).thenReturn(Optional.of(automobil1));
+        Mockito.when(repository.save(Mockito.any())).thenReturn(merged);
 
         StepVerifier.create(service.update(1L, update))
                 .expectNextMatches(a -> a.getId().equals(1L) && a.getYearMade().equals(2021))
@@ -82,8 +84,8 @@ class AutomobilServiceImplTest {
 
     @Test
     void deleteById_completes() {
-        Mockito.when(repository.findById(1L)).thenReturn(Mono.just(automobil1));
-        Mockito.when(repository.deleteById(1L)).thenReturn(Mono.empty());
+        Mockito.when(repository.findById(1L)).thenReturn(Optional.of(automobil1));
+        Mockito.doNothing().when(repository).deleteById(1L);
 
         StepVerifier.create(service.deleteById(1L))
                 .verifyComplete();

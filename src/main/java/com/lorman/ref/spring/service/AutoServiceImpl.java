@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 @Service
 @RequiredArgsConstructor
@@ -25,7 +26,9 @@ public class AutoServiceImpl implements AutoService {
         // Výsledok ani chyby nás nezastavia – po zavolaní pokračujeme ďalej.
         return dummyClient.callDummy()
                 .onErrorResume(e -> Mono.empty())
-                .thenMany(repository.findAll().map(mapper::toDto));
+                .thenMany(Flux.defer(() -> Flux.fromIterable(repository.findAll())
+                        .map(a -> mapper.toDto(a))))
+                .subscribeOn(Schedulers.boundedElastic());
     }
 
     private static void validate(AutomobilDTO dto) {
@@ -45,9 +48,10 @@ public class AutoServiceImpl implements AutoService {
 
     @Override
     public Mono<AutomobilDTO> findById(Long id) {
-        return repository.findById(id)
+        return Mono.defer(() -> Mono.justOrEmpty(repository.findById(id)))
                 .switchIfEmpty(Mono.error(new NotFoundException("Automobil not found: " + id)))
-                .map(mapper::toDto);
+                .map(a -> mapper.toDto(a))
+                .subscribeOn(Schedulers.boundedElastic());
     }
 
     @Override
@@ -55,29 +59,37 @@ public class AutoServiceImpl implements AutoService {
         validate(item);
         Automobil entity = mapper.toEntity(item);
         entity.setId(null);
-        return repository.save(entity).map(mapper::toDto);
+        return Mono.fromCallable(() -> repository.save(entity))
+                .map(e -> mapper.toDto(e))
+                .subscribeOn(Schedulers.boundedElastic());
     }
 
     @Override
     public Mono<AutomobilDTO> update(Long id, AutomobilDTO item) {
         validate(item);
-        return repository.findById(id)
-                .switchIfEmpty(Mono.error(new NotFoundException("Automobil not found: " + id)))
-                .flatMap(existing -> {
+        return Mono.fromCallable(() -> repository.findById(id))
+                .flatMap(opt -> opt.<Mono<Automobil>>map(Mono::just)
+                        .orElseGet(() -> Mono.error(new NotFoundException("Automobil not found: " + id))))
+                .map(existing -> {
                     existing.setBrand(item.getBrand());
                     existing.setModel(item.getModel());
                     if (item.getYearMade() != null) {
                         existing.setYearMade(item.getYearMade());
                     }
-                    return repository.save(existing);
+                    return existing;
                 })
-                .map(mapper::toDto);
+                .flatMap(e -> Mono.fromCallable(() -> repository.save(e)))
+                .map(saved -> mapper.toDto(saved))
+                .subscribeOn(Schedulers.boundedElastic());
     }
 
     @Override
     public Mono<Void> deleteById(Long id) {
-        return repository.findById(id)
-                .switchIfEmpty(Mono.error(new NotFoundException("Automobil not found: " + id)))
-                .flatMap(existing -> repository.deleteById(id));
+        return Mono.fromCallable(() -> repository.findById(id))
+                .flatMap(opt -> opt.<Mono<Automobil>>map(Mono::just)
+                        .orElseGet(() -> Mono.error(new NotFoundException("Automobil not found: " + id))))
+                .flatMap(existing -> Mono.fromRunnable(() -> repository.deleteById(id)))
+                .subscribeOn(Schedulers.boundedElastic())
+                .then();
     }
 }
