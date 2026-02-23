@@ -16,14 +16,20 @@ public class Driver {
     @Id
     private Long id;
 
-    @Column(name = "automobil_id", insertable = false, updatable = false)
-    private Long automobilId;
+    // ak chceš mať fyzicky FK stĺpec pod kontrolou cez vzťah:
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "automobil_id")
+    private Automobil automobil;
 
     private String name;
 
     private String surname;
 
-    @OneToMany
-    @JoinColumn(name = "driver_id")
+    @OneToMany(
+            mappedBy = "driver",
+            cascade = CascadeType.ALL,
+            orphanRemoval = false
+    )
+    @org.hibernate.annotations.BatchSize(size = 50)
     private List<Address> addresses;
 }

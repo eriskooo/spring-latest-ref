@@ -11,6 +11,7 @@ import org.mapstruct.Mapping;
 
 @Mapper(componentModel = "spring")
 public interface AutomobilMapper {
+
     @Mapping(target = "drivers", ignore = true)
     AutomobilDTO toDto(Automobil automobil);
 
@@ -19,11 +20,11 @@ public interface AutomobilMapper {
 
     DriverDTO toDto(Driver driver);
 
-    @Mapping(target = "automobilId", ignore = true)
+    @Mapping(target = "automobil", ignore = true)
     Driver toEntity(DriverDTO dto);
 
     AddressDTO toDto(Address address);
 
-    @Mapping(target = "driverId", ignore = true)
+    @Mapping(target = "driver", ignore = true)
     Address toEntity(AddressDTO dto);
 }

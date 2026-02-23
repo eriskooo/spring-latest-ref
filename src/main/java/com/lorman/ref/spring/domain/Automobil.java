@@ -12,6 +12,28 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@NamedEntityGraphs({
+        @NamedEntityGraph(
+                name = "Automobil.withDrivers",
+                attributeNodes = {
+                        @NamedAttributeNode("drivers")
+                }
+        ),
+        @NamedEntityGraph(
+                name = "Automobil.withDriversAndAddresses",
+                attributeNodes = {
+                        @NamedAttributeNode(value = "drivers", subgraph = "drivers-subgraph")
+                },
+                subgraphs = {
+                        @NamedSubgraph(
+                                name = "drivers-subgraph",
+                                attributeNodes = {
+                                        @NamedAttributeNode("addresses")
+                                }
+                        )
+                }
+        )
+})
 public class Automobil {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,8 +46,11 @@ public class Automobil {
     @Column(name = "YEAR_MADE")
     private Integer yearMade;
 
-    @OneToMany
-    @JoinColumn(name = "automobil_id")
+    @OneToMany(
+            mappedBy = "automobil",
+            cascade = CascadeType.ALL,
+            orphanRemoval = false
+    )
     private List<Driver> drivers;
 
     // Convenience constructor kept for backward compatibility in tests
