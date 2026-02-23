@@ -1,7 +1,6 @@
 package com.lorman.ref.spring.web;
 
 import com.lorman.ref.spring.dto.AutomobilDTO;
-import com.lorman.ref.spring.security.TestJwtUtil;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -23,7 +22,6 @@ class ErrorHandlingIntegrationTest {
         client().get()
                 .uri("/auta/{id}", 999999)
                 .accept(MediaType.APPLICATION_JSON)
-                .header("Authorization", "Bearer " + TestJwtUtil.createToken(java.util.List.of("READ")))
                 .exchange()
                 .expectStatus().isNotFound()
                 .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
@@ -40,7 +38,6 @@ class ErrorHandlingIntegrationTest {
                 .uri("/auta")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(invalid)
-                .header("Authorization", "Bearer " + TestJwtUtil.createToken(java.util.List.of("WRITE")))
                 .exchange()
                 .expectStatus().isBadRequest()
                 .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
@@ -57,7 +54,6 @@ class ErrorHandlingIntegrationTest {
                 .uri("/auta/{id}", 1)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(invalid)
-                .header("Authorization", "Bearer " + TestJwtUtil.createToken(java.util.List.of("UPDATE")))
                 .exchange()
                 .expectStatus().isBadRequest()
                 .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
@@ -70,7 +66,6 @@ class ErrorHandlingIntegrationTest {
     void delete_nonExisting_shouldReturn404() {
         client().delete()
                 .uri("/auta/{id}", 888888)
-                .header("Authorization", "Bearer " + TestJwtUtil.createToken(java.util.List.of("WRITE")))
                 .exchange()
                 .expectStatus().isNotFound()
                 .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
@@ -84,7 +79,6 @@ class ErrorHandlingIntegrationTest {
         client().get()
                 .uri("/auta/{id}", "abc")
                 .accept(MediaType.APPLICATION_JSON)
-                .header("Authorization", "Bearer " + TestJwtUtil.createToken(java.util.List.of("READ")))
                 .exchange()
                 .expectStatus().isBadRequest()
                 .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
