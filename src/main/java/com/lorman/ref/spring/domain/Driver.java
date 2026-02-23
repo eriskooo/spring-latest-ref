@@ -30,6 +30,5 @@ public class Driver {
             cascade = CascadeType.ALL,
             orphanRemoval = false
     )
-    @org.hibernate.annotations.BatchSize(size = 50)
     private List<Address> addresses;
 }

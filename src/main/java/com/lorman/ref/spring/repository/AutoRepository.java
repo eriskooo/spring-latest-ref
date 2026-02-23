@@ -16,7 +16,8 @@ public interface AutoRepository extends JpaRepository<Automobil, Long> {
     Optional<Automobil> findById(Long id);
 
     @Override
-    @EntityGraph(value = "Automobil.withDrivers")
+//    @EntityGraph(value = "Automobil.withDrivers")
+    @EntityGraph(value = "Automobil.withDriversAndAddresses")
     List<Automobil> findAll();
 
 }
