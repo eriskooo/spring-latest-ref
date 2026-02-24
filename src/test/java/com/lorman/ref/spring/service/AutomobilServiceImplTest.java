@@ -12,6 +12,9 @@ import org.mapstruct.factory.Mappers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -45,9 +48,10 @@ class AutomobilServiceImplTest {
     }
 
     @Test
-    void findAll_returnsAll() {
+    void findAll_withPagination_returnsFirstPageOf10() {
         Mockito.when(dummyClient.callDummy()).thenReturn(Mono.empty());
-        Mockito.when(repository.findAll()).thenReturn(List.of(automobil1, automobil2));
+        Mockito.when(repository.findAll(Mockito.any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(automobil1, automobil2), PageRequest.of(0, 10), 2L));
         Mockito.when(transactionTemplate.execute(Mockito.any()))
                 .thenAnswer(invocation -> {
                     @SuppressWarnings("unchecked")
@@ -55,7 +59,25 @@ class AutomobilServiceImplTest {
                     return cb.doInTransaction(Mockito.mock(TransactionStatus.class));
                 });
 
-        StepVerifier.create(service.findAll())
+        StepVerifier.create(service.findAll(0, 10))
+                .expectNextMatches(a -> a.getId().equals(1L) && a.getBrand().equals("Toyota"))
+                .expectNextMatches(a -> a.getId().equals(2L) && a.getBrand().equals("VW"))
+                .verifyComplete();
+    }
+
+    @Test
+    void findAll_withoutPagination_returnsAll() {
+        Mockito.when(dummyClient.callDummy()).thenReturn(Mono.empty());
+        Mockito.when(repository.findAll())
+                .thenReturn(List.of(automobil1, automobil2));
+        Mockito.when(transactionTemplate.execute(Mockito.any()))
+                .thenAnswer(invocation -> {
+                    @SuppressWarnings("unchecked")
+                    TransactionCallback<List<AutomobilDTO>> cb = (TransactionCallback<List<AutomobilDTO>>) invocation.getArgument(0);
+                    return cb.doInTransaction(Mockito.mock(TransactionStatus.class));
+                });
+
+        StepVerifier.create(service.findAll(null, null))
                 .expectNextMatches(a -> a.getId().equals(1L) && a.getBrand().equals("Toyota"))
                 .expectNextMatches(a -> a.getId().equals(2L) && a.getBrand().equals("VW"))
                 .verifyComplete();

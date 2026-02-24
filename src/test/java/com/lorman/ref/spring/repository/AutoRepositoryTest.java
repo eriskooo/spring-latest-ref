@@ -9,10 +9,14 @@ import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -114,5 +118,21 @@ class AutoRepositoryTest {
         delta = after - before;
 
         log.info("*** delta (2) : {}", delta);
+    }
+
+    @Test
+    void findAll_withPagination_shouldReturn10PerPage_andDifferentItemsAcrossPages() {
+        Page<Automobil> page1 = repository.findAll(PageRequest.of(0, 10));
+        Page<Automobil> page2 = repository.findAll(PageRequest.of(1, 10));
+
+        assertThat(page1.getTotalElements()).isGreaterThanOrEqualTo(100);
+        assertThat(page1.getContent()).hasSize(10);
+        assertThat(page2.getContent()).hasSize(10);
+
+        Set<Long> ids1 = page1.getContent().stream().map(Automobil::getId).collect(Collectors.toSet());
+        Set<Long> ids2 = page2.getContent().stream().map(Automobil::getId).collect(Collectors.toSet());
+
+        // Ensure no overlap between first two pages
+        assertThat(ids1).doesNotContainAnyElementsOf(ids2);
     }
 }

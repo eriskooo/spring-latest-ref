@@ -7,6 +7,8 @@ import com.lorman.ref.spring.exception.NotFoundException;
 import com.lorman.ref.spring.mapper.AutomobilMapper;
 import com.lorman.ref.spring.repository.AutoRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 import reactor.core.publisher.Flux;
@@ -27,15 +29,22 @@ public class AutoServiceImpl implements AutoService {
     private final TransactionTemplate txTemplate;
 
     @Override
-    public Flux<AutomobilDTO> findAll() {
+    public Flux<AutomobilDTO> findAll(Integer index, Integer offset) {
         Mono<List<AutomobilDTO>> data = dummyClient.callDummy()
                 .then(
                         Mono.fromCallable(() ->
-                                txTemplate.execute(status ->
-                                        repository.findAll().stream()
+                                txTemplate.execute(status -> {
+                                    if (index == null || offset == null) {
+                                        return repository.findAll().stream()
                                                 .map(mapper::toDto)
-                                                .toList()
-                                )
+                                                .toList();
+                                    } else {
+                                        Page<Automobil> page = repository.findAll(PageRequest.of(index, offset));
+                                        return page.getContent().stream()
+                                                .map(mapper::toDto)
+                                                .toList();
+                                    }
+                                })
                         ).subscribeOn(Schedulers.boundedElastic())
                 );
 
