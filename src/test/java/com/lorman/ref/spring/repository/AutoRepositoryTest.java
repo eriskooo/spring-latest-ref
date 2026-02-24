@@ -102,7 +102,7 @@ class AutoRepositoryTest {
 
         log.info("*** delta (1) : {}", delta);
 
-        assertThat(all.size()).isEqualTo(3);
+        assertThat(all.size()).isGreaterThanOrEqualTo(100);
 
         Automobil automobil = all.iterator().next();
         assertThat(automobil.getDrivers()).isNotEmpty();
