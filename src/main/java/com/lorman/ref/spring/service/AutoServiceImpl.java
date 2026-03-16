@@ -6,6 +6,7 @@ import com.lorman.ref.spring.dto.AutomobilDTO;
 import com.lorman.ref.spring.exception.NotFoundException;
 import com.lorman.ref.spring.mapper.AutomobilMapper;
 import com.lorman.ref.spring.repository.AutoRepository;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -29,6 +30,7 @@ public class AutoServiceImpl implements AutoService {
     private final TransactionTemplate txTemplate;
 
     @Override
+    @CircuitBreaker(name = "dummyClient")
     public Flux<AutomobilDTO> findAll(Integer index, Integer offset) {
         Mono<List<AutomobilDTO>> data = dummyClient.callDummy()
                 .then(
