@@ -58,3 +58,24 @@ spec:
     - name: otlp-http
       port: 4318
       targetPort: 4318
+---
+# Optional NodePort Service for direct access to Jaeger UI from host
+# Keeping it in the same file for convenience (no separate apply needed)
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger-nodeport
+  labels:
+    app: jaeger
+  annotations:
+    description: "NodePort service to access Jaeger UI locally without port-forward"
+spec:
+  type: NodePort
+  selector:
+    app: jaeger
+  ports:
+    - name: ui
+      port: 16686
+      targetPort: 16686
+      nodePort: 31686
+  # If you want to ingest OTLP HTTP from outside the cluster as well, you can add another NodePort here.

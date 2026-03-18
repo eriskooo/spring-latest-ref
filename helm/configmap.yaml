@@ -21,6 +21,11 @@ data:
     management.endpoints.web.exposure.include=health,info
     # Make readiness independent from Kafka by default (can be re-enabled later)
     management.health.kafka.enabled=false
+    # Enable Micrometer Observation for Kafka so produce/consume appear as spans in Jaeger
+    spring.kafka.producer.observation-enabled=true
+    spring.kafka.consumer.observation-enabled=true
+    spring.kafka.listener.observation-enabled=true
+    spring.kafka.template.observation-enabled=true
   logback-json.xml: |
     <?xml version="1.0" encoding="UTF-8"?>
     <configuration>

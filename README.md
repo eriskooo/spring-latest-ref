@@ -38,9 +38,14 @@ Kafka (brief)
     - Start a Kafka/Redpanda broker and set in application.properties:
         - kafka.enabled=true
         - spring.kafka.bootstrap-servers=localhost:9092
+  - Tracing: Kafka producer/consumer spans are enabled via Micrometer Observation and exported to Jaeger
+    when OTLP tracing is configured. In Jaeger you will see spans like "kafka.producer" and "kafka.consumer",
+    linked together via trace context headers.
 - Kubernetes: manifests in helm/ provide an in‑cluster Redpanda (helm/kafka.yaml) and configure the app via env vars:
     - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
     - KAFKA_ENABLED=true
+  - Tracing is enabled by default; after the Pod starts it will produce a message which is then consumed by the
+    listener. In Jaeger UI select service "spring-latest-ref" and look for spans labeled kafka.producer/kafka.consumer.
 - Health checks: Kubernetes probes use dedicated Actuator endpoints (/actuator/health/liveness,
   /actuator/health/readiness).
   Kafka health contributor is disabled by default in helm/configmap.yaml to keep readiness independent from Kafka;
@@ -108,7 +113,7 @@ Jaeger (trasovanie) – nasadenie a použitie
         - kubectl port-forward svc/jaeger 16686:16686
         - otvoriť http://localhost:16686
     - Možnosť B – NodePort (bez port-forward):
-        - kubectl apply -f helm/jaeger-nodeport.yaml
+        - nie je potrebné aplikovať extra manifest – NodePort služba je súčasťou helm/jaeger.yaml
         - otvoriť http://localhost:31686
 - Poznámky:
     - Sampling je v demu nastavený na 1.0 (všetko). Pre produkciu znížte management.tracing.sampling.probability.
@@ -143,6 +148,14 @@ Jaeger (trasovanie) – nasadenie a použitie
         - v Podoch je pripojený konfig súbor s endpointom (pozri /etc/spring-latest-ref-config/application.properties),
         - vyvolaj traffic (napr. opakovane GET na /auta),
         - v Jaeger UI vyber správny časový rozsah (napr. Last 1 hour) a službu "spring-latest-ref".
+  - Kafka spany v Jaegeri:
+      - Lokálne: nastav kafka.enabled=true a spring.kafka.bootstrap-servers, spustenie aplikácie odošle 1 správu,
+        ktorú consumer spracuje. V Jaegeri uvidíš "kafka.producer" a "kafka.consumer" spany.
+      - V Kubernetes: po nasadení helm/kafka.yaml a deploymentu aplikácie sa správa odošle a spracuje automaticky.
+      - Ak ich nevidíš, over:
+          - že Kafka beží (topic môže byť vytvorený automaticky Redpanda/Kafka),
+          - že v konfigurácii je zapnutý observation pre Kafka (v projekte je predvolene zapnutý),
+          - logy aplikácie pre chyby pripojenia na Kafka broker (Connection refused, authorization atď.).
 
 FAQ – ConfigMap a reštart Podu
 
