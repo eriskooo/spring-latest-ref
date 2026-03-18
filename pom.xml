@@ -63,6 +63,7 @@
             <scope>runtime</scope>
         </dependency>
 
+
         <!-- Observability / tracing (náhrada za spring-boot-starter-opentelemetry z Boot 4) -->
         <dependency>
             <groupId>io.micrometer</groupId>

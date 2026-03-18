@@ -7,6 +7,13 @@ metadata:
 data:
   application.properties: |
     management.metrics.export.otlp.enabled=false
+    # Tracing export (Micrometer -> OTLP). Enable export to in-cluster Jaeger collector (HTTP 4318).
+    # Note: Ensure Jaeger is deployed first: kubectl apply -f helm/jaeger.yaml
+    management.otlp.tracing.endpoint=http://jaeger:4318/v1/traces
+    # Sampling probability (0.0 = off, 1.0 = sample all). Keep low in production.
+    management.tracing.sampling.probability=1.0
+    # Add JDBC SQL statements to tracing spans (Hibernate StatementInspector)
+    spring.jpa.properties.hibernate.session_factory.statement_inspector=com.lorman.ref.spring.observation.SqlTracingStatementInspector
     # Zapne JSON logovanie v prostredí Kubernetes (nadstaví Logback konfiguráciu)
     logging.config=/etc/spring-latest-ref-config/logback-json.xml
     # Enable dedicated Kubernetes probe endpoints

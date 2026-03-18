@@ -95,6 +95,72 @@ Kubernetes (helm/ directory)
 - kubectl apply -f helm/service.yaml
 - (optional) kubectl apply -f helm/ingress.yaml
 
+Jaeger (trasovanie) – nasadenie a použitie
+
+- Nasadiť Jaeger (all-in-one) do klastru:
+    - kubectl apply -f helm/jaeger.yaml
+- Export trace z aplikácie do Jaeger cez OTLP HTTP (4318) je v Helm ConfigMap už POVOLENÝ predvolene
+  (management.otlp.tracing.endpoint=http://jaeger:4318/v1/traces). Ak si ConfigMap menil v minulosti, uisti sa, že
+  tento riadok tam je a zmeny aplikuj:
+    - kubectl apply -f helm/configmap.yaml && kubectl rollout restart deploy/spring-latest-ref
+- Prístup do Jaeger UI:
+    - Možnosť A – port-forward (univerzálne):
+        - kubectl port-forward svc/jaeger 16686:16686
+        - otvoriť http://localhost:16686
+    - Možnosť B – NodePort (bez port-forward):
+        - kubectl apply -f helm/jaeger-nodeport.yaml
+        - otvoriť http://localhost:31686
+- Poznámky:
+    - Sampling je v demu nastavený na 1.0 (všetko). Pre produkciu znížte management.tracing.sampling.probability.
+    - Ak používate inú inštaláciu Jaegera/OTLP kolektora, nastavte endpoint podľa vašej služby.
+    - Ak na http://localhost:16686 nič nevidíš:
+        - skontroluj, že beží port-forward (prípadne použi NodePort možnosť B),
+        - over, že Pod "jaeger" je v stave Running: kubectl get pods -l app=jaeger,
+        - ak používaš Minikube: minikube service jaeger-nodeport --url (vypíše presnú URL).
+    - JDBC logovanie do spanov:
+        - SQL dotazy sa pridávajú ako eventy s názvom "jdbc.query" do aktuálneho spanu (atribút db.statement obsahuje
+          SQL šablónu).
+        - Lokálne je to zapnuté cez Hibernate StatementInspector v application.properties:
+            -
+            spring.jpa.properties.hibernate.session_factory.statement_inspector=com.lorman.ref.spring.observation.SqlTracingStatementInspector
+        - V Kubernetes je to zapnuté v helm/configmap.yaml v časti application.properties.
+        - Ako to vypnúť: zmaž alebo zakomentuj uvedený property riadok.
+    - Ak v Jaeger UI vidíš len jednu službu ("jaeger all-in-one"):
+        - je to normálne, pokiaľ tvoja aplikácia ešte neposlala žiadne spany;
+        - po nasadení/aktualizácii ConfigMap vyvolaj traffic na aplikáciu (napr. viackrát GET na /auta cez
+          NodePort http://localhost:31301/auta),
+        - v UI zvoľ rozsah času „Last 1 hour“ a v zozname služieb vyhľadaj „spring-latest-ref“;
+        - over, že Pod aplikácie načítal konfiguráciu s OTLP endpointom: kubectl exec -it deploy/spring-latest-ref --
+          cat /etc/spring-latest-ref-config/application.properties | grep otlp
+        - skontroluj logy aplikácie pre prípadné chyby exportu OTLP (401/404/connection refused): kubectl logs
+          deploy/spring-latest-ref | findstr /C:"otlp" /C:"OpenTelemetry" /C:"export"
+        - uisti sa, že premenná prostredia OTEL_RESOURCE_ATTRIBUTES je nastavená na service.name=spring-latest-ref (je
+          pridaná v helm/deployment.yaml),
+        - ak stále nič, reštartuj deployment: kubectl rollout restart deploy/spring-latest-ref a znova vygeneruj
+          traffic.
+    - Ak v Jaeger UI nevidíš žiadne traces:
+        - over, že Deployment bol reštartovaný po úprave ConfigMap: kubectl rollout restart deploy/spring-latest-ref,
+        - v Podoch je pripojený konfig súbor s endpointom (pozri /etc/spring-latest-ref-config/application.properties),
+        - vyvolaj traffic (napr. opakovane GET na /auta),
+        - v Jaeger UI vyber správny časový rozsah (napr. Last 1 hour) a službu "spring-latest-ref".
+
+FAQ – ConfigMap a reštart Podu
+
+- Otázka: Na aktualizáciu ConfigMap mám reštartnúť Pod?
+- Odpoveď: Áno, pre túto aplikáciu áno. Hoci Kubernetes aktualizuje obsah ConfigMap volume v súbore, Spring Boot
+  štandardne nenahrá nové hodnoty externých vlastností za behu (pokiaľ nepoužijete mechanizmus ako
+  spring-cloud-kubernetes-config s automatickým reloadom). Aby sa nové hodnoty z ConfigMap prejavili v aplikácii, je
+  potrebný rolling reštart Deploymentu.
+- Odporúčaný postup po úprave helm/configmap.yaml:
+    - kubectl apply -f helm/configmap.yaml
+    - kubectl rollout restart deploy/spring-latest-ref
+    - voliteľne skontroluj priebeh: kubectl rollout status deploy/spring-latest-ref
+- Overenie, že Pod načítal nové hodnoty:
+    - kubectl exec -it deploy/spring-latest-ref -- cat /etc/spring-latest-ref-config/application.properties | findstr
+      otlp
+- Tip: Ak chcete dosiahnuť reštart bez manuálneho príkazu, môžete zmeniť (anotáciou) špecifikáciu Deploymentu, čo vyvolá
+  nový rollout. V praxi je však príkaz "kubectl rollout restart" najjednoduchší a najčitateľnejší.
+
 Notes
 
 - Three sample rows are inserted on startup (V2__seed_auto.sql).
