@@ -33,7 +33,8 @@ Test types:
 - **Repository**: `repository/AutoRepositoryTest` — JPA queries, pagination, Hibernate query counting
 
 Test config overrides are in `src/test/resources/application-test.properties` (smaller circuit breaker windows for
-faster tests).
+faster tests). An `OpenApiGenerationIntegrationTest` fetches `/v3/api-docs.yaml` and writes it to `target/openapi.yaml`
+as a build artifact. Kafka integration tests use `@EmbeddedKafka` with `kafka.enabled=true` and `@DirtiesContext`.
 
 ## Architecture
 
@@ -67,11 +68,32 @@ wrapped with `Schedulers.boundedElastic()` and `TransactionTemplate`.
   and validation errors to structured `ErrorResponseDTO`.
 
 - **Kafka** is disabled by default (`kafka.enabled=false`). Enabled via `@ConditionalOnProperty`. For K8s, Redpanda is
-  used as the broker (`helm/kafka.yaml`).
+  used as the broker (`helm/kafka.yaml`). Producer sends a startup message on `ApplicationReadyEvent`. Consumer uses
+  `@RetryableTopic` (3 attempts, exponential backoff 1→2s) with auto-created DLT at `my.first.topic.DLT`.
 
 - **Observability**: Micrometer + OpenTelemetry OTLP exporter. Disabled locally (
   `management.metrics.export.otlp.enabled=false`), enabled in K8s via ConfigMap. Traces go to Jaeger (
-  `helm/jaeger.yaml`). SQL tracing is done via `SqlTracingStatementInspector` (Hibernate `StatementInspector`).
+  `helm/jaeger.yaml`). SQL tracing is done via `SqlTracingStatementInspector` (Hibernate `StatementInspector`) — adds
+  SQL as span events with `db.statement` attribute; uses OpenTelemetry API directly (not Spring's Tracer). K8s uses
+  JSON logging via Logback Logstash encoder (`logback-json.xml` mounted from ConfigMap).
+
+- **Web filters**: `TraceLogFilter` (`@Order(HIGHEST_PRECEDENCE + 5)`) logs all requests/responses (body truncated to
+  2048 chars, sensitive headers masked). `OutboundHttpClientCustomizer` translates upstream HTTP 5xx responses to 503
+  for all WebClient instances globally.
+
+- **DummyClient / DummyController**: `DummyController` returns a random number 1–10; number 5 throws
+  `IllegalStateException` → 500. This is the deliberate failure endpoint used to exercise the circuit breaker and the
+  5xx→503 translation. `DummyClient` wraps calls with `@CircuitBreaker(name = "dummyClient")`.
+
+- **Entity Graph usage in repository**: `findById` uses `Automobil.withDriversAndAddresses` (full depth);
+  `findAll` / paginated `findAll` use `Automobil.withDrivers` (addresses remain lazy). `@BatchSize(size=50)` on the
+  `drivers` collection, plus `hibernate.default_batch_fetch_size=50` globally.
+
+## Graceful Shutdown
+
+`server.shutdown=graceful` with `spring.lifecycle.timeout-per-shutdown-phase=30s` (matches K8s
+`terminationGracePeriodSeconds`). K8s deployment adds a 10s pre-stop sleep to allow traffic draining and Kafka
+consumer group rebalance before the shutdown signal.
 
 ## Database
 
