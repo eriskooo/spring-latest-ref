@@ -1,17 +1,33 @@
 package com.lorman.ref.spring.controller;
+
+import com.lorman.ref.spring.client.DummyClient;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import reactor.core.publisher.Mono;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class AutomobilControllerTest {
 
+    // DummyClient robí reálne HTTP volanie na iný server — v testoch ho mockujeme,
+    // aby GET /auta nespadlo na "Connection refused"
+    @MockBean
+    private DummyClient dummyClient;
+
     @LocalServerPort
     private int port;
+
+    @BeforeEach
+    void mockDummyClient() {
+        Mockito.when(dummyClient.callDummy()).thenReturn(Mono.empty());
+    }
 
     @Test
     void all_shouldReturnOkAndSomeItems() {
