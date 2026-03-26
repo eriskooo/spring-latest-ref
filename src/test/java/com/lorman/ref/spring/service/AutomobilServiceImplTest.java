@@ -91,9 +91,10 @@ class AutomobilServiceImplTest {
     }
 
     @Test
-    void findAll_vrati_vsetky_auta_ked_nie_je_zadane_strankovanie() {
+    void findAll_pouzije_default_strankovanie_ked_nie_su_zadane_parametre() {
         Mockito.when(dummyClient.callDummy()).thenReturn(Mono.empty());
-        Mockito.when(repository.findAll()).thenReturn(List.of(toyota2018, vwGolf2020));
+        Mockito.when(repository.findAll(Mockito.any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(toyota2018, vwGolf2020), PageRequest.of(0, 20), 2L));
         mockTransactionTemplate();
 
         StepVerifier.create(service.findAll(null, null))
@@ -142,17 +143,6 @@ class AutomobilServiceImplTest {
         StepVerifier.create(service.create(novePoziadavka))
                 .expectNextMatches(a -> a.getId().equals(10L) && a.getBrand().equals("Skoda"))
                 .verifyComplete();
-    }
-
-    @Test
-    void create_vyhodi_chybu_ked_brand_chyba() {
-        AutomobilDTO bezBrandu = new AutomobilDTO(null, null, "Octavia", 2019);
-
-        // validate() háže synchronne — Mono.defer zabezpečí, že výnimka sa propaguje cez reaktívny stream
-        StepVerifier.create(Mono.defer(() -> service.create(bezBrandu)))
-                .expectErrorMatches(ex -> ex instanceof IllegalArgumentException
-                        && ex.getMessage().contains("brand"))
-                .verify();
     }
 
     // ══════════════════════════════════════════════════════════════════

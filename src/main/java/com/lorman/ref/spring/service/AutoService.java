@@ -5,7 +5,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public interface AutoService {
-    Flux<AutomobilDTO> findAll(Integer index, Integer offset);
+    Flux<AutomobilDTO> findAll(Integer page, Integer size);
 
     Mono<AutomobilDTO> findById(Long id);
 

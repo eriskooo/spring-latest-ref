@@ -18,9 +18,9 @@ public class AutoController {
     private final AutoService service;
 
     @GetMapping
-    public Flux<AutomobilDTO> all(@RequestParam(name = "index", required = false) Integer index,
-                                  @RequestParam(name = "offset", required = false) Integer offset) {
-        return service.findAll(index, offset);
+    public Flux<AutomobilDTO> all(@RequestParam(name = "page", required = false) Integer page,
+                                  @RequestParam(name = "size", required = false) Integer size) {
+        return service.findAll(page, size);
     }
 
     @GetMapping("/{id}")

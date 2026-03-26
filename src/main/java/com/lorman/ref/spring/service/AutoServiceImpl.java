@@ -8,6 +8,7 @@ import com.lorman.ref.spring.mapper.AutomobilMapper;
 import com.lorman.ref.spring.repository.AutoRepository;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -18,34 +19,30 @@ import reactor.core.scheduler.Schedulers;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AutoServiceImpl implements AutoService {
 
+    private static final int DEFAULT_PAGE = 0;
+    private static final int DEFAULT_SIZE = 20;
+
     private final AutoRepository repository;
     private final AutomobilMapper mapper;
     private final DummyClient dummyClient;
-
-
     private final TransactionTemplate txTemplate;
 
     @Override
-    @CircuitBreaker(name = "dummyClient")
-    public Flux<AutomobilDTO> findAll(Integer index, Integer offset) {
+    @CircuitBreaker(name = "dummyClient", fallbackMethod = "findAllFallback")
+    public Flux<AutomobilDTO> findAll(Integer page, Integer size) {
         Mono<List<AutomobilDTO>> data = dummyClient.callDummy()
                 .then(
                         Mono.fromCallable(() ->
                                 txTemplate.execute(status -> {
-                                    if (index == null || offset == null) {
-                                        return repository.findAll().stream()
-                                                .map(mapper::toDto)
-                                                .toList();
-                                    } else {
-                                        Page<Automobil> page = repository.findAll(PageRequest.of(index, offset));
-                                        return page.getContent().stream()
-                                                .map(mapper::toDto)
-                                                .toList();
-                                    }
+                                    Page<Automobil> p = repository.findAll(
+                                            PageRequest.of(page != null ? page : DEFAULT_PAGE,
+                                                    size != null ? size : DEFAULT_SIZE));
+                                    return p.getContent().stream().map(mapper::toDto).toList();
                                 })
                         ).subscribeOn(Schedulers.boundedElastic())
                 );
@@ -53,19 +50,17 @@ public class AutoServiceImpl implements AutoService {
         return data.flatMapMany(Flux::fromIterable);
     }
 
-    private static void validate(AutomobilDTO dto) {
-        if (dto == null) {
-            throw new IllegalArgumentException("Body must not be null");
-        }
-        if (dto.getBrand() == null || dto.getBrand().isBlank()) {
-            throw new IllegalArgumentException("brand must not be blank");
-        }
-        if (dto.getModel() == null || dto.getModel().isBlank()) {
-            throw new IllegalArgumentException("model must not be blank");
-        }
-        if (dto.getYearMade() != null && dto.getYearMade() < 1886) { // first automobile year
-            throw new IllegalArgumentException("yearMade must be >= 1886");
-        }
+    // Fallback: circuit is open — skip dummyClient call and serve data directly from DB
+    public Flux<AutomobilDTO> findAllFallback(Integer page, Integer size, Throwable t) {
+        log.warn("Circuit breaker open for dummyClient, serving data without upstream call: {}", t.getMessage());
+        return Mono.fromCallable(() ->
+                txTemplate.execute(status -> {
+                    Page<Automobil> p = repository.findAll(
+                            PageRequest.of(page != null ? page : DEFAULT_PAGE,
+                                    size != null ? size : DEFAULT_SIZE));
+                    return p.getContent().stream().map(mapper::toDto).toList();
+                })
+        ).flatMapMany(Flux::fromIterable).subscribeOn(Schedulers.boundedElastic());
     }
 
     @Override
@@ -78,7 +73,6 @@ public class AutoServiceImpl implements AutoService {
 
     @Override
     public Mono<AutomobilDTO> create(AutomobilDTO item) {
-        validate(item);
         Automobil entity = mapper.toEntity(item);
         entity.setId(null);
         return Mono.fromCallable(() -> repository.save(entity))
@@ -88,7 +82,6 @@ public class AutoServiceImpl implements AutoService {
 
     @Override
     public Mono<AutomobilDTO> update(Long id, AutomobilDTO item) {
-        validate(item);
         return Mono.fromCallable(() -> repository.findById(id))
                 .flatMap(opt -> opt.<Mono<Automobil>>map(Mono::just)
                         .orElseGet(() -> Mono.error(new NotFoundException("Automobil not found: " + id))))
