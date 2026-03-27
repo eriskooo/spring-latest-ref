@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mvn test:*)",
+      "Bash(mvn --version)",
+      "Bash(java -version)",
+      "Bash(mvn help:describe -Dplugin=surefire)",
+      "Bash(xargs ls:*)",
+      "Bash(xargs grep:*)",
+      "Bash(xargs wc:*)",
+      "Bash(mvn clean:*)",
+      "Bash(mvn spring-boot:run)",
+      "Bash(netstat -ano)",
+      "Bash(findstr \":8080\")",
+      "Bash(findstr \"LISTENING\")",
+      "Bash(taskkill:*)",
+      "Bash(cmd /c \"taskkill /PID 20528 /F\")",
+      "Bash(docker build:*)",
+      "Bash(kubectl rollout:*)",
+      "Bash(kubectl get:*)",
+      "Skill(update-config)"
+    ]
+  }
+}
