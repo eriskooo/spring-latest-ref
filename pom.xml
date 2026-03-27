@@ -79,6 +79,13 @@
             <artifactId>micrometer-registry-otlp</artifactId>
         </dependency>
 
+        <!-- JDBC observability via DataSource proxy -->
+        <dependency>
+            <groupId>net.ttddyy.observation</groupId>
+            <artifactId>datasource-micrometer-spring-boot</artifactId>
+            <version>1.0.6</version>
+        </dependency>
+
         <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>

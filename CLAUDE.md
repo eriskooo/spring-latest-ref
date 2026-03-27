@@ -73,8 +73,8 @@ wrapped with `Schedulers.boundedElastic()` and `TransactionTemplate`.
 
 - **Observability**: Micrometer + OpenTelemetry OTLP exporter. Disabled locally (
   `management.metrics.export.otlp.enabled=false`), enabled in K8s via ConfigMap. Traces go to Jaeger (
-  `helm/jaeger.yaml`). SQL tracing is done via `SqlTracingStatementInspector` (Hibernate `StatementInspector`) — adds
-  SQL as span events with `db.statement` attribute; uses OpenTelemetry API directly (not Spring's Tracer). K8s uses
+  `helm/jaeger.yaml`). SQL tracing uses `datasource-micrometer-spring-boot` (`net.ttddyy.observation`) — wraps the
+  DataSource via auto-configuration and creates child spans for each JDBC query with `db.statement` attribute. K8s uses
   JSON logging via Logback Logstash encoder (`logback-json.xml` mounted from ConfigMap).
 
 - **Web filters**: `TraceLogFilter` (`@Order(HIGHEST_PRECEDENCE + 5)`) logs all requests/responses (body truncated to
